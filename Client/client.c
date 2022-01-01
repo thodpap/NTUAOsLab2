@@ -47,14 +47,21 @@ int main(int argc, char **argv) {
         error("Error: Bad Connection");
     
     int welcome = read(sock, read_str, 1024);
-    printf("Server says %s", read_str);
+    printf("Server says: %s", read_str);
     
     fgets(name, 15, stdin); 
     if (name[strlen(name)-1] == '\n') 
         name[strlen(name)-1] = 0;
-    
+
+    if (strlen(name) == 0)
+        sprintf(name, "Uknown");
+
     send(sock, name, strlen(name), 0); 
-     
+
+    memset(read_str, 0, 1024);
+    memset(write_str, 0, 1024);
+    
+
     isConnected = true;
 
     pthread_t thread_id;

@@ -80,8 +80,13 @@ int main(int argc, char **argv) {
     } else {
         send(sock, hello, strlen(hello), 0);
         // get response
-        int valread = read( sock, name, 15);
+        int valread = read( sock, name, 15); 
         printf("%s Joined the chat\n", name);
+
+        char buf[1024];
+        memset(buf, 0, 1024);
+        sprintf(buf, "Connection with server Established");
+        send(sock, buf, strlen(buf), 0);
     }
     printf("Accepted connection %d\n", sock);
     
@@ -90,6 +95,7 @@ int main(int argc, char **argv) {
     pthread_create(&thread_id, NULL, readFromClient, NULL);
 
     while(1) {
+        memset(write_str, 0, strlen(write_str)); 
         fgets(write_str, 1024, stdin);
         if (write_str[strlen(write_str)-1] == '\n') 
             write_str[strlen(write_str)-1] = 0;
@@ -106,6 +112,7 @@ int main(int argc, char **argv) {
  
 void *readFromClient(void *vargp) {
     while(1) {
+        memset(read_str, 0, strlen(read_str));
         int valread = read( sock , read_str, 1024);
         if (valread == 0) {
             printf("Connection was shut down by the client\n"); 
