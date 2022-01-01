@@ -5,6 +5,8 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <errno.h>
+#include <pthread.h>
+#include <signal.h>
 #include "socket_error_handler.h"
 
 #define PORT 8080
@@ -13,6 +15,12 @@
 char buffer[1024];
 char *hello = "Hello from FancyServer. Tells us your name: ";
 char name[15];
+
+int sock;
+char read_str[1024];
+char write_str[1024];
+
+void *readFromClient(void *vargp);
 
 int main(int argc, char **argv) {
     uint16_t port = PORT;
@@ -66,29 +74,47 @@ int main(int argc, char **argv) {
         Waits for client
     */
     int addrlen = sizeof(addr);
-    int new_socket = accept(server_socket, (struct sockaddr *)&addr, (socklen_t *)&addrlen);
-    if (new_socket < 0) {
+    sock = accept(server_socket, (struct sockaddr *)&addr, (socklen_t *)&addrlen);
+    if (sock < 0) {
         error("Error: Accept");
     } else {
-        send(new_socket, hello, strlen(hello), 0);
+        send(sock, hello, strlen(hello), 0);
         // get response
-        int valread = read( new_socket, name, 15);
+        int valread = read( sock, name, 15);
+        printf("%s Joined the chat\n", name);
     }
-    printf("Accepted connection %d\n", new_socket);
-    while(1) {
-        int valread = read( new_socket , buffer, 1024);
-        if (valread == 0) {
-            printf("Connection closed\n");
-            break;
-        }
-        printf("%s: %s\n", name, buffer);
-        memset(buffer, 0, strlen(buffer));
-    }
+    printf("Accepted connection %d\n", sock);
     
-    // printf("%s\n",buffer );
-    // send(new_socket , hello , strlen(hello) , 0 );
-    // printf("Hello message sent\n");
+
+    pthread_t thread_id;
+    pthread_create(&thread_id, NULL, readFromClient, NULL);
+
+    while(1) {
+        fgets(write_str, 1024, stdin);
+        if (write_str[strlen(write_str)-1] == '\n') 
+            write_str[strlen(write_str)-1] = 0;
+            
+        send(sock, write_str, strlen(write_str), 0); 
+        // printf(stdout, "Sending: %s\n", write_str);
+        memset(write_str, 0, strlen(write_str)); 
+    } 
+
+    pthread_join(thread_id, NULL);
     
     return 0;
 }
  
+void *readFromClient(void *vargp) {
+    while(1) {
+        int valread = read( sock , read_str, 1024);
+        if (valread == 0) {
+            printf("Connection was shut down by the client\n"); 
+            kill(getpid(), SIGINT);
+            break;
+        } 
+        printf("\r%s: %s\n",name, read_str); 
+        memset(read_str, 0, strlen(read_str));
+        
+    }
+    return NULL;
+}
