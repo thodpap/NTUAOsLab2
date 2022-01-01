@@ -1,2 +1,2 @@
 # NTUAOsLab2
-f
+Create a chat using sockets
