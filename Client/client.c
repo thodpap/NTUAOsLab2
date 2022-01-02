@@ -92,7 +92,7 @@ void *readFromServer(void *vargp) {
             kill(getpid(), SIGINT);
             break;
         } 
-        fprintf(stdout, "Server: %s\n", read_str); 
+        fprintf(stdout, "%s\n", read_str); 
         memset(read_str, 0, strlen(read_str)); 
     }
     return NULL;
