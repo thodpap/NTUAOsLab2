@@ -134,7 +134,7 @@ void *readFromClient(void *vargp) {
             
         int valread = read(accepted_sockets[socket_number] , input, 1009);
         
-        if (valread == 0) {
+        if (valread <= 0) {
             printf("Connection was shut down by the client\n");    
             // close connection
             
