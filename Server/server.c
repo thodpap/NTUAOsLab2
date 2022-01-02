@@ -30,8 +30,7 @@ static int addrlen;
 
 pthread_t thread_id[MAX_CONNECTIONS];
  
-void *readFromClient(void *vargp);
-void *writeToClients(void *vargp);
+void *readFromClient(void *vargp); 
 
 int findOpenSocketSpot();
 
