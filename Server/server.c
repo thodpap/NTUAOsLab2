@@ -8,6 +8,8 @@
 #include <pthread.h>
 #include <signal.h>
 #include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros  
+#include <signal.h>
+
 #include "socket_error_handler.h"
 
 #define PORT 8080
@@ -32,7 +34,8 @@ pthread_t thread_id[MAX_CONNECTIONS];
  
 void *readFromClient(void *vargp); 
 
-int findOpenSocketSpot();
+static int findOpenSocketSpot();
+static void signal_handler(int signal);
 
 int main(int argc, char **argv) {
     uint16_t port = PORT;
@@ -41,6 +44,13 @@ int main(int argc, char **argv) {
         if (t != 0)
             port = t;
     }
+
+    /* Set up sigint action */ 
+    struct sigaction act;
+    memset(&act, 0, sizeof(act));
+    act.sa_handler = signal_handler;
+    sigaction(SIGINT, &act, NULL);
+
     /*
         Domain -> AF_INET: IPv4 Internet protocols
         Type   -> SOCK_STREAM: TCP
@@ -165,11 +175,20 @@ void *readFromClient(void *vargp) {
     return NULL;
 }
 
-int findOpenSocketSpot() {
+static int findOpenSocketSpot() {
     for (int i = 0; i < MAX_CONNECTIONS; ++i) {
         if (accepted_sockets[i] == 0) 
             return i;
     }
     
     return -1;
+}
+
+static void signal_handler(int signal) {
+    printf("Terminating the server by signal %d\n", signal);
+    for (int s = 0; s < MAX_CONNECTIONS; ++s) {
+        if (accepted_sockets[s] > 0) 
+            close(accepted_sockets[s]);
+    }
+    exit(EXIT_FAILURE);
 }
