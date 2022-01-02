@@ -7,12 +7,11 @@
 #include <errno.h>
 #include <pthread.h>
 #include <signal.h>
-#include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros   
-#include <arpa/inet.h>    //close 
+#include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros  
 #include "socket_error_handler.h"
 
 #define PORT 8080
-#define MAX_CONNECTIONS (int)10
+#define MAX_CONNECTIONS (int)2
 
 #define true 1
 #define false 0
@@ -27,8 +26,7 @@ static char input[1024];
 static int server_socket;
 
 struct sockaddr_in addr;
-static int addrlen;
-static int transmitingSocket = -1;
+static int addrlen; 
 
 pthread_t thread_id[MAX_CONNECTIONS];
  
@@ -86,18 +84,17 @@ int main(int argc, char **argv) {
     */
     addrlen = sizeof(addr);     
     
-    pthread_t thread_id_write;
-    pthread_create(&thread_id_write, NULL, writeToClients, NULL); 
-
-    while (1) {
-        if (findOpenSocketSpot() == -1) 
-            continue;
-
+    while (1) { 
         int sock = accept(server_socket, (struct sockaddr *)&addr, (socklen_t *)&addrlen);
         if (sock < 0) {
             error("Error: Accepting new socket");            
         } else { 
             int pos = findOpenSocketSpot();
+
+            if (pos == -1) { 
+                close(sock);
+                continue;
+            }
             accepted_sockets[pos] = sock;   
             printf("Creating thread %d\n", pos);
             pthread_create(&thread_id[pos], NULL, readFromClient, (void *)&pos);   
@@ -107,23 +104,7 @@ int main(int argc, char **argv) {
     
     return 0;
 }
- 
-void *writeToClients(void *vargp) {
-    while(1) {
-        if (transmitingSocket >= 0) {
-            char transmit[1009];  
-            sprintf(transmit, "%s: %s", names[transmitingSocket], input); 
-            for (int s = 0; s < MAX_CONNECTIONS; ++s) {
-                if (accepted_sockets[s] > 0) 
-                    send(accepted_sockets[s], transmit, strlen(transmit), 0);            
-            }
-            
-            memset(input, 0, strlen(input));  
-            transmitingSocket = -1;
-        }
-    } 
-    return NULL;
-}
+  
 void *readFromClient(void *vargp) {
     int *socket = (int *)vargp;  
 
@@ -171,7 +152,15 @@ void *readFromClient(void *vargp) {
             return NULL;
         } else {
             printf("%s: %s\n",names[socket_number], input);  
-            transmitingSocket = socket_number;
+            
+            char transmit[1009];  
+            sprintf(transmit, "%s: %s", names[socket_number], input); 
+            for (int s = 0; s < MAX_CONNECTIONS; ++s) {
+                if (accepted_sockets[s] > 0) 
+                    send(accepted_sockets[s], transmit, strlen(transmit), 0);            
+            }
+            
+            memset(input, 0, strlen(input));  
         } 
     }
     return NULL;

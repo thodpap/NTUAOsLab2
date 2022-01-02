@@ -49,6 +49,9 @@ int main(int argc, char **argv) {
     int welcome = read(sock, read_str, 1024);
     printf("Server says: %s", read_str);
     
+    if(strlen(read_str) == 0) {
+        error("Connection was closed by the server");
+    }
     fgets(name, 15, stdin); 
     if (name[strlen(name)-1] == '\n') 
         name[strlen(name)-1] = 0;
