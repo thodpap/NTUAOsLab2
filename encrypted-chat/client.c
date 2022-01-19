@@ -21,23 +21,28 @@
 #define false 0
 
 #define DATA_SIZE       1024
-#define BLOCK_SIZE      16
-#define KEY_SIZE	    16  /* AES128 */
+#define BLOCK_SIZE      15
+#define KEY_SIZE	    15  /* AES128 */
 
 void *readFromServer(void *vargp); 
 static void signal_handler(int signal);
+
+static void encrypt_init();
+static void encrypt(char * buff);
+static void decrypt(char * buff);
 
 char read_str[DATA_SIZE];
 char write_str[DATA_SIZE];
 char name[15];
 
 unsigned char key[] = "okhfgdnbgfvtrgf";        //encryption key
-unsigned char iv[] = "qghgftrgfbvgfhy";        //initialization vector
+unsigned char iv[] =  "qghgftrgfbvgfhy";        //initialization vector
 
 struct session_op sess;
 struct crypt_op cryp;
 struct {
-    unsigned char 	in[DATA_SIZE],
+    unsigned char 
+            in[DATA_SIZE],
             encrypted[DATA_SIZE],
             decrypted[DATA_SIZE],
             iv[BLOCK_SIZE],
@@ -109,25 +114,8 @@ int main(int argc, char **argv) {
     }
     printf("Opening /dev/crypto\n");
     
-	memset(&sess, 0, sizeof(sess));
-	memset(&cryp, 0, sizeof(cryp));
+	encrypt_init();
 
-    // memcpy(&data.in, in, DATA_SIZE);
-    memcpy(&data.iv, iv, BLOCK_SIZE);
-    memcpy(&data.key, key, KEY_SIZE);
-
-    /*
-	 * Get crypto session for AES128
-	 */
-	sess.cipher = CRYPTO_AES_CBC;
-	sess.keylen = KEY_SIZE;
-	sess.key = data.key;
-
-    if (ioctl(fd, CIOCGSESSION, &sess)) {
-		perror("ioctl(CIOCGSESSION)");
-		return 1;
-	}
-    
     pthread_t thread_id;
     pthread_create(&thread_id, NULL, readFromServer, NULL);
 
@@ -141,18 +129,7 @@ int main(int argc, char **argv) {
         char sending_str[1024];
         sprintf(sending_str, "%s: %s",name, write_str);
 
-        // TODO: Encrypt the sending_str 
-        cryp.ses = sess.ses;
-        cryp.len = sizeof(data.in);
-        cryp.src = (unsigned char *)sending_str;
-        cryp.dst = data.encrypted;
-        cryp.iv = data.iv;
-        cryp.op = COP_ENCRYPT;
-
-        if (ioctl(fd, CIOCCRYPT, &cryp)) {
-            perror("ioctl(CIOCCRYPT)");
-            return 1;
-        }
+        encrypt(write_str);
         
         send(sock, data.encrypted, strlen((char *)data.encrypted), 0); 
         memset(write_str, 0, strlen(write_str));
@@ -172,14 +149,9 @@ void *readFromServer(void *vargp) {
         } 
         
         // TODO: decrypt the message
-        cryp.src = data.encrypted;
-        cryp.dst = data.decrypted;
-        cryp.op = COP_DECRYPT;
-        if (ioctl(fd, CIOCCRYPT, &cryp)) {
-            error("ioctl(CIOCCRYPT)");
-        }
+        decrypt(read_str);
 
-        printf("%s ||| %s\n", data.decrypted, read_str); 
+        printf("%s\n", data.decrypted); 
         memset(read_str, 0, strlen(read_str)); 
     }
     return NULL;
@@ -193,4 +165,49 @@ static void signal_handler(int signal) {
 		error("ioctl(CIOCFSESSION)");
 	}
 
+}
+
+static void encrypt_init() { 
+	memset(&sess, 0, sizeof(sess));
+	memset(&cryp, 0, sizeof(cryp));
+
+    memcpy(&data.iv, iv, BLOCK_SIZE);
+    memcpy(&data.key, key, KEY_SIZE);
+
+    sess.cipher = CRYPTO_AES_CBC;
+	sess.keylen = KEY_SIZE;
+	sess.key = data.key;
+
+	if (ioctl(fd, CIOCGSESSION, &sess)) {
+		error("ioctl(CIOCGSESSION)");
+	}
+}
+
+static void encrypt(char * buff) {
+    printf("Message to be encrypted: %s\n", buff);
+
+    memcpy(data.in, buff, strlen(buff));
+    cryp.ses = sess.ses;
+	cryp.len = sizeof(data.in);
+	cryp.src = data.in;
+	cryp.dst = data.encrypted;
+	cryp.iv = data.iv;
+	cryp.op = COP_ENCRYPT;
+
+	if (ioctl(fd, CIOCCRYPT, &cryp)) {
+		error("ioctl(CIOCCRYPT)");
+	}
+    printf("Encrypt message: %s\n", data.encrypted);
+}
+static void decrypt(char * buff) {
+    printf("Message to be encrypted: %s\n", buff); 
+    
+    cryp.src = data.encrypted;
+	cryp.dst = data.decrypted;
+	cryp.op = COP_DECRYPT;
+	if (ioctl(fd, CIOCCRYPT, &cryp)) {
+		error("ioctl(CIOCCRYPT)");
+	}
+ 
+    printf("Original message: %s\n", data.decrypted);
 }

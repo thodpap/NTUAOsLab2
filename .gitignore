@@ -5,5 +5,6 @@ encrypted-chat/client
 encrypted-chat/server
 
 encrypted-chat/.fuse*
+encrypted-chat/test
 
 .vscode/
