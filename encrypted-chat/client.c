@@ -127,9 +127,8 @@ int main(int argc, char **argv) {
             break;
 
         char sending_str[1024];
-        sprintf(sending_str, "%s: %s",name, write_str);
-
-        encrypt(write_str);
+        sprintf(sending_str, "%s: %s",name, write_str); 
+        encrypt(sending_str);
         
         send(sock, data.encrypted, strlen((char *)data.encrypted), 0); 
         memset(write_str, 0, strlen(write_str));
@@ -183,9 +182,7 @@ static void encrypt_init() {
 	}
 }
 
-static void encrypt(char * buff) {
-    printf("Message to be encrypted: %s\n", buff);
-
+static void encrypt(char * buff) { 
     memcpy(data.in, buff, strlen(buff));
     cryp.ses = sess.ses;
 	cryp.len = sizeof(data.in);
@@ -196,18 +193,13 @@ static void encrypt(char * buff) {
 
 	if (ioctl(fd, CIOCCRYPT, &cryp)) {
 		error("ioctl(CIOCCRYPT)");
-	}
-    printf("Encrypt message: %s\n", data.encrypted);
+	} 
 }
-static void decrypt(char * buff) {
-    printf("Message to be encrypted: %s\n", buff); 
-    
+static void decrypt(char * buff) { 
     cryp.src = data.encrypted;
 	cryp.dst = data.decrypted;
 	cryp.op = COP_DECRYPT;
 	if (ioctl(fd, CIOCCRYPT, &cryp)) {
 		error("ioctl(CIOCCRYPT)");
-	}
- 
-    printf("Original message: %s\n", data.decrypted);
+	} 
 }
