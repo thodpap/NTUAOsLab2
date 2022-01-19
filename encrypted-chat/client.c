@@ -21,8 +21,8 @@
 #define false 0
 
 #define DATA_SIZE       1024
-#define BLOCK_SIZE      15
-#define KEY_SIZE	    15  /* AES128 */
+#define BLOCK_SIZE      16
+#define KEY_SIZE	    16  /* AES128 */
 
 void *readFromServer(void *vargp); 
 static void signal_handler(int signal);
