@@ -125,7 +125,11 @@ void *readFromClient(void *vargp) {
     // get response
     char name[15]; 
     memset(name, 0, 15); 
+    
     int valread = read(accepted_sockets[socket_number], name, 15);
+    if (valread < 0) {
+        error("Error on read on readFromClient");
+    }
 
     memset(names[socket_number], 0, 15);
     memcpy(names[socket_number], name, strlen(name));

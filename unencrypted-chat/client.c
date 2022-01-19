@@ -47,6 +47,10 @@ int main(int argc, char **argv) {
         error("Error: Bad Connection");
     
     int welcome = read(sock, read_str, 1024);
+    if (welcome < 0) {
+        error("Error: On first message read from server");
+    }
+    
     printf("Server says: %s", read_str);
     
     if(strlen(read_str) == 0) {
