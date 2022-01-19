@@ -1,2 +1,9 @@
 unencrypted-chat/client
 unencrypted-chat/server
+
+encrypted-chat/client
+encrypted-chat/server
+
+encrypted-chat/.fuse*
+
+.vscode/

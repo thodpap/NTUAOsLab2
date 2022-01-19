@@ -126,7 +126,7 @@ void *readFromClient(void *vargp) {
     char name[15]; 
     memset(name, 0, 15); 
     
-    int valread = read(accepted_sockets[socket_number], name, 15);
+    int valread = read(accepted_sockets[socket_number], name, 15); // this is encrypted
     if (valread < 0) {
         error("Error on read on readFromClient");
     }
@@ -134,19 +134,26 @@ void *readFromClient(void *vargp) {
     memset(names[socket_number], 0, 15);
     memcpy(names[socket_number], name, strlen(name));
 
-    for (int i = 0; i < MAX_CONNECTIONS; ++i) {
-        if (accepted_sockets[i] > 0)  {
-            char buff[1000];
-            sprintf(buff, "%s joined the chat", names[socket_number]);    
-            send(accepted_sockets[i], buff, strlen(buff), 0);
-        }
-    }
+    // for (int i = 0; i < MAX_CONNECTIONS; ++i) {
+    //     if (accepted_sockets[i] > 0)  {
+    //         char buff[1000];
+    //         // sending 2 distinc messages:
+    //         // The first is unencrypted, the second is encrypted 
+    //         memset(buff, 0, strlen(buff));
+    //         sprintf(buff, "User joined the chat with name: ");
+    //         send(accepted_sockets[i], buff, strlen(buff), 0);
+
+    //         memset(buff, 0, strlen(buff));
+    //         sprintf(buff, "%s\n", names[socket_number]);    
+    //         send(accepted_sockets[i], buff, strlen(buff), 0);
+    //     }
+    // }
 
     while(1) {    
         if (accepted_sockets[socket_number] == 0) 
             continue;  
             
-        int valread = read(accepted_sockets[socket_number] , input, 1009);
+        int valread = read(accepted_sockets[socket_number] , input, 1024);
         
         if (valread <= 0) {
             printf("Connection was shut down by the client %s\n", names[socket_number]);    
@@ -154,23 +161,29 @@ void *readFromClient(void *vargp) {
             
             accepted_sockets[socket_number] = 0;
 
-            for (int i = 0; i < MAX_CONNECTIONS; ++i) {
-                if (accepted_sockets[i] > 0)  {
-                    char buff[1000];
-                    sprintf(buff, "%s left the chat\n", names[socket_number]);    
-                    send(accepted_sockets[i], buff, strlen(buff), 0);
-                }
-            }
-            memset(names[socket_number], 0, strlen(names[socket_number]));
+            // for (int i = 0; i < MAX_CONNECTIONS; ++i) {
+            //     if (accepted_sockets[i] > 0)  {
+            //         char buff[1000];
+
+            //         // sending 2 distinc messages:
+            //         // The first is unencrypted, the second is encrypted
+            //         memset(buff, 0, strlen(buff));
+            //         sprintf(buff, "User left the chat with name: ");
+            //         send(accepted_sockets[i], buff, strlen(buff), 0);
+                    
+            //         memset(buff, 0, strlen(buff));
+            //         sprintf(buff, "%s\n", names[socket_number]);    
+            //         send(accepted_sockets[i], buff, strlen(buff), 0);
+            //     }
+            // }
+            memset(names[socket_number], 0, strlen(names[socket_number])); // remove user from list
             return NULL;
         } else {
-            printf("%s: %s\n",names[socket_number], input);  
-            
-            char transmit[1009];  
-            sprintf(transmit, "%s: %s", names[socket_number], input); 
+            printf("User sent -> %s\n", input);  
+             
             for (int s = 0; s < MAX_CONNECTIONS; ++s) {
                 if (accepted_sockets[s] > 0) 
-                    send(accepted_sockets[s], transmit, strlen(transmit), 0);            
+                    send(accepted_sockets[s], input, strlen(input), 0);            
             }
             
             memset(input, 0, strlen(input));  
